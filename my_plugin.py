@@ -1,31 +1,56 @@
-from cat.mad_hatter.decorators import tool, hook, plugin
-from pydantic import BaseModel
-from datetime import datetime, date
+import asyncio
+from cat.mad_hatter.decorators import tool
+from .light import Light
 
-class MySettings(BaseModel):
-    required_int: int
-    optional_int: int = 69
-    required_str: str
-    optional_str: str = "meow"
-    required_date: date
-    optional_date: date = 1679616000
+light = Light()
 
-@plugin
-def settings_model():
-    return MySettings
+def run_corutine(coro):
+    # Salva il loop di eventi corrente prima di creare un nuovo loop
+    try:
+        loop_originale = asyncio.get_running_loop()
+    except RuntimeError:
+        loop_originale = None 
 
-@tool
-def get_the_day(tool_input, cat):
-    """Get the day of the week. Input is always None."""
+    # Avvia un nuovo ciclo di eventi asyncio per eseguire la coroutine
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        res = loop.run_until_complete(coro)
+    finally:
+        # Chiudi il nuovo ciclo di eventi
+        loop.close()
+        
+        # Ripristina il loop di eventi originale
+        asyncio.set_event_loop(loop_originale)
 
-    dt = datetime.now()
+    return res
 
-    return dt.strftime('%A')
 
-@hook
-def before_cat_sends_message(message, cat):
+@tool()
+def get_lightbulb_info(input, cat):
+    """Get the status info for the lightbulb, the info include: brightness, color_temp, hue, saturation, power, name"""
+    return run_corutine(
+        light.get_info()
+    )
 
-    prompt = f'Rephrase the following sentence in a grumpy way: {message["content"]}'
-    message["content"] = cat.llm(prompt)
 
-    return message
+@tool()
+def power_on_lightbulb(input, cat):
+    """Power on a the lightbulb"""
+    run_corutine(
+        light.power_on()
+    )
+
+    return "The light was turned on"
+
+
+@tool()
+def power_off_lightbulb(input, cat):
+    """Power on a the lightbulb"""
+    run_corutine(
+        light.power_off()
+    )
+
+    return "The light was turned off"
+
+
