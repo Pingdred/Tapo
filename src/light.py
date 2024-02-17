@@ -1,3 +1,6 @@
+import colorsys
+from typing import Any, Dict, Tuple
+
 from tapo import ApiClient
 
 from cat.log import log
@@ -10,11 +13,18 @@ class Light:
             tapo_username=self.username,
             tapo_password=self.password    
         )
+        
+        self._device = None
+
+    async def _get_device(self):
+        if not self._device:
+            self._device = await self.client.l530(self.ip_address)  
+        return self._device
+    
 
     async def get_info(self):
-        device = await self.client.l530(self.ip_address)
-
         log.debug("Getting device info..")
+        device = await self._get_device()
         device_info = await device.get_device_info()
 
         full_info = device_info.to_dict()
@@ -32,36 +42,46 @@ class Light:
 
         return info
 
+    
     async def power_on(self):
-        device = await self.client.l530(self.ip_address)
-
         log.debug("Turning device on...")
+        device = await self._get_device()
         await device.on()
 
     async def power_off(self):
-        device = await self.client.l530(self.ip_address)
-
         log.debug("Turning device off...")
+        device = await self._get_device()
         await device.off()
 
-    async def set_color(self, color: str):
-        device = await self.client.l530(self.ip_address)
 
+    async def get_rgb_color(self) -> Tuple[int,int,int]:
+        info = await self.get_info()
+
+        h = info["hue"]
+        s = info["saturation"]
+        v = info["brightness"]
+
+        return self._hsv_to_rgb(h,s,v)
+
+    async def set_color(self, color: str):
         log.debug(f"Color in HEX: {color}")
 
-        rgb_color = self.hex_to_rgb(color)
+        rgb_color = self._hex_to_rgb(color)
         log.debug(f"Color in RGB: {rgb_color}")
 
-        hsv_color = self.rgb_to_hsv(*rgb_color)
+        hsv_color = self._rgb_to_hsv(*rgb_color)
         log.debug(f"Color in HSV: {hsv_color}")
 
-        await device.set_hue_saturation(hsv_color[0], hsv_color[1])
+        hue = 1 if hsv_color[0] == 0 else hsv_color[0]
+        saturation = 1 if hsv_color[1] == 0 else hsv_color[1]
+
+        device = await self._get_device()
+        await device.set_hue_saturation(hue, saturation)
+        
         
     async def set_brightess(self, brightness: int):
-        device = await self.client.l530(self.ip_address)
-
+        device = await self._get_device()
         await device.set_brightness(brightness)
-
         return f"Brightness set to {brightness}"
 
     async def brightess_up(self):
@@ -71,7 +91,6 @@ class Light:
         await self.set_brightess(new_brightness)
 
         return f"Brightness set to {new_brightness}"
-
 
     async def brightess_down(self):
         info = await self.get_info()
@@ -83,56 +102,43 @@ class Light:
 
 
     @property
-    def settings(self):
+    def settings(self) -> Dict[str,Any]:
         return MadHatter().get_plugin().load_settings()
     
     @property
-    def username(self):
+    def username(self) -> str:
         return self.settings["username"]
     
     @property
-    def password(self):
+    def password(self) -> str:
         return self.settings["password"]
     
     @property
-    def ip_address(self):
+    def ip_address(self) -> str:
         return self.settings["ip_address"]
     
+
     @staticmethod
-    def hex_to_rgb(hex_string):
+    def _hex_to_rgb(hex_string) -> Tuple[int,int,int]:
         return tuple(int(hex_string[i:i+2], 16) for i in (0, 2, 4))
     
     @staticmethod
-    def rgb_to_hsv(r, g, b):
+    def _rgb_to_hsv(r, g, b) -> Tuple[int,int,int]:
         # Normalizza i valori RGB nel range [0, 1]
         r /= 255.0
         g /= 255.0
         b /= 255.0
 
-        # Trova il valore massimo e minimo tra i componenti RGB
-        cmax = max(r, g, b)
-        cmin = min(r, g, b)
-        delta = cmax - cmin
+        h,s,v = colorsys.rgb_to_hsv(r,g,b)
 
-        # Calcola il valore (Value)
-        v = cmax
+        return (round(h * 360), round(s * 100), round(v * 100))
+    
+    @staticmethod
+    def _hsv_to_rgb(h, s, v) -> Tuple[int,int,int]:
+        h /= 360.0
+        s /= 100.0
+        v /= 100.0
 
-        # Se il valore massimo è zero, allora la saturazione e l'angolo di tonalità sono entrambi nulli
-        if cmax == 0:
-            s = 0
-            h = 0
-        else:
-            # Calcola la saturazione (Saturation)
-            s = delta / cmax
-
-            # Calcola l'angolo di tonalità (Hue)
-            if delta == 0:
-                h = 0
-            elif cmax == r:
-                h = 60 * (((g - b) / delta) % 6)
-            elif cmax == g:
-                h = 60 * (((b - r) / delta) + 2)
-            elif cmax == b:
-                h = 60 * (((r - g) / delta) + 4)
-
-        return (round(h), round(s * 100), round(v * 100))
+        r, g, b = colorsys.hsv_to_rgb(h,s,v)
+        
+        return (round(r * 255), round(g * 255), round(b * 255))

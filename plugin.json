@@ -1,10 +1,10 @@
 {
     "name": "Tapo",
     "version": "0.0.1",
-    "description": "Control yur Tapo lights",
+    "description": "Control your Tapo lights",
     "author_name": "Emanuele Morrone",
     "author_url": "",
     "plugin_url": "https://github.com/Pingdred/Tapo",
-    "tags": "IoT, Tapo, Smartlight, ",
-    "thumb": "https://raw.githubusercontent.com/my_repo_path/my_plugin.png"
+    "tags": "IoT, Tapo, Smartlight",
+    "thumb": ""
 }
