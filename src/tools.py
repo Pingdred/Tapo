@@ -20,14 +20,14 @@ async def get_lightbulb_info(_, cat):
 @tool 
 async def get_lightbulb_brigtness(_, cat):
     """Get the current lightbulb brightness."""
-    brightness = await (light.get_info())["brightness"]
+    brightness = (await light.get_info())["brightness"]
 
     return f"The lightbulb brightness is: {brightness}"
 
 @tool
 async def get_lightbulb_status(_, cat):
     """Get the current lightbulb power status."""
-    device_on =  await (light.get_info())["device_on"]
+    device_on =  (await light.get_info())["device_on"]
 
     status = "On" if device_on else "Off"
 
@@ -36,7 +36,7 @@ async def get_lightbulb_status(_, cat):
 @tool
 async def get_lightbulb_name(_, cat):
     """Get the current lightbulb brightness."""
-    name =  await (light.get_info())["nickname"]
+    name =  (await light.get_info())["nickname"]
 
     return f"The lightbulb brightness is: {name}"
 
