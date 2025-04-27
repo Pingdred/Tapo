@@ -18,7 +18,7 @@ async def get_lightbulb_info(_, cat):
     return await light.get_info()
 
 @tool 
-async def get_lightbulb_brigtness(_, cat):
+async def get_lightbulb_brightness(_, cat):
     """Get the current lightbulb brightness."""
     brightness = (await light.get_info())["brightness"]
 
@@ -60,7 +60,7 @@ async def power_on_lightbulb(_, cat):
 
 @tool
 async def power_off_lightbulb(_, cat):
-    """Power on the lightbulb."""
+    """Power off the lightbulb."""
     await light.power_off()
 
     return "The light was turned off"
@@ -106,10 +106,8 @@ async def increase_the_lightbulb_brightness(increase_by, cat):
     
     return f"Brightness increased by {increase_by}%"
 
-
 async def calc_new_brightness(perc: int):
     info = await light.get_info()
-
     current_brightness = info["brightness"]
 
     if perc == 0:
