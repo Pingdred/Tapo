@@ -116,7 +116,12 @@ async def calc_new_brightness(perc: int):
     if perc > 100:
         perc = 100
 
-    if perc < 100:
-        perc == -100
+    if perc < -100:
+        perc = -100
 
-    return current_brightness + math.floor((current_brightness*perc)/100)
+    new_brightness = current_brightness + math.floor((current_brightness * perc) / 100)
+
+    # Ensure brightness is within [0, 100] range
+    new_brightness = max(0, min(100, new_brightness))
+
+    return new_brightness
